@@ -62,16 +62,16 @@ void loop() {
   // }  
 
 
-  // if (button_state == LOW) // bonus 2
-  // {
-  //   digitalWrite(LED_PIN_GRN, LOW);
-  //   RED();
-  //   RED();
-  //   RED();
-  //   RED();
-  //   YELLOW_RED();
+  if (button_state == LOW) // bonus 2
+  {
+    digitalWrite(LED_PIN_GRN, LOW);
+    RED();
+    RED();
+    RED();
+    RED();
+    YELLOW_RED();
 
-  // }   
+  }   
 
   // if (button_state == LOW) //bonus 3
   // {
@@ -88,24 +88,24 @@ void loop() {
   //   delay(50);
   // }  
 
-  if (button_state == LOW) //bonus police officer
-  {
-    int i = 300;
-    while (i > 5)
-    {
-      delay(i);
-      digitalWrite(LED_PIN_GRN, HIGH);
-      delay(i);
-      digitalWrite(LED_PIN_YLW, HIGH);
-      digitalWrite(LED_PIN_GRN, LOW);
-      delay(i);
-      digitalWrite(LED_PIN_YLW, LOW);
-      digitalWrite(LED_PIN_RED, HIGH);
-      delay(i);
-      digitalWrite(LED_PIN_RED, LOW);
-      i -= 7;
-    }
-  }  
+  // if (button_state == LOW) //bonus police officer
+  // {
+  //   int i = 300;
+  //   while (i > 5)
+  //   {
+  //     delay(i);
+  //     digitalWrite(LED_PIN_GRN, HIGH);
+  //     delay(i);
+  //     digitalWrite(LED_PIN_YLW, HIGH);
+  //     digitalWrite(LED_PIN_GRN, LOW);
+  //     delay(i);
+  //     digitalWrite(LED_PIN_YLW, LOW);
+  //     digitalWrite(LED_PIN_RED, HIGH);
+  //     delay(i);
+  //     digitalWrite(LED_PIN_RED, LOW);
+  //     i -= 7;
+  //   }
+  // }  
 
   // if (button_state == LOW) //bonus traffic light
   // {
