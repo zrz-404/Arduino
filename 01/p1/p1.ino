@@ -45,7 +45,7 @@ void loop() {
   
   float voltage = sensorValue * (5.0 / 1023.0);
 
-   int led = sensorValue / 4;
+  float led = map(sensorValue, 0, 1023, 0, 255);
 
   int brightness = map(sensorValue /10, 0, 1023, 0, 255);
   lcd.setCursor(0, 1);
@@ -60,15 +60,15 @@ void loop() {
   lcd.print(led);
   
   
-  analogWrite(9, brightness / 100);
+  //analogWrite(9, brightness / 100);
   analogWrite(6, brightness);
-  delay(brightness * 5);
+  //delay(brightness * 5);
   analogWrite(9, brightness);
-  analogWrite(6, brightness / 100);
-  delay(brightness * 5);
-  analogWrite(6, brightness);
-  delay(brightness * 5);
-  analogWrite(9, brightness / 100);
-  analogWrite(6, brightness);
+  //analogWrite(6, brightness / 100);
+  // delay(brightness * 5);
+  // analogWrite(6, brightness);
+  // delay(brightness * 5);
+  // analogWrite(9, brightness / 100);
+  // analogWrite(6, brightness);
   delay(50); //adds stability
 }
