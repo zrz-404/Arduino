@@ -20,6 +20,7 @@ function sendColorUpdate(buttonId, color) {
     const data = new URLSearchParams();
     data.append('color', color);
     data.append('id', buttonId);
+    console.log(data);
     fetch('/color', {
         method: 'POST',
         body: data
