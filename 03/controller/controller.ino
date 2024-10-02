@@ -1,115 +1,163 @@
-// #include <Adafruit_NeoPixel.h>
-// #include <FS.h>
-// #include <ESP8266WiFi.h>
-// #include <ESP8266WebServer.h>
-
-// const char *SSID = "SSid name";
-// const char *PASSWORD = "password";
-// WifiServer server(80);
-// String header;
-
-// String outputD5State = RED;
-// String outputD5State = OFF;
-
-// const int out1 = 23;
-// const int out2 = 22;
-
-
-// void setup()
-// {
-//     Serial.begin(115200);
-//     WIFI.begin(ssid, password);
-//     for (int i = 0; i < 64; i++) {
-
-//     }
-    
-// }
-#include <Adafruit_NeoPixel.h>
-#include <FS.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_NeoMatrix.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
-
-const char* SSID = "SSid name";
-const char* PASSWORD = "password";
-
-// 2-dimensional array of row pin numbers:
-const int row[8] = {2, 7, 19, 5, 13, 18, 12, 16};
-
-// 2-dimensional array of column pin numbers:
-const int col[8] = {6, 11, 10, 3, 17, 4, 8, 9};
-
-// 2-dimensional array of pixels:
-int pixels[8][8];
-
-// cursor position:
-int x = 5;
-int y = 5;
-
+#define PIN D5  // DIN pin connected to D4
+// NeoMatrix setup for the 8x8 LED matrix
+Adafruit_NeoMatrix matrix = Adafruit_NeoMatrix(8, 8, PIN,
+  NEO_MATRIX_TOP + NEO_MATRIX_LEFT + NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG,
+  NEO_GRB + NEO_KHZ800);
+const char* SSID = “Clown))“;        // Wi-Fi SSID
+const char* PASSWORD = “ghoul558";    // Wi-Fi Password
+ESP8266WebServer server(80);
+// HTML content to be served by the ESP8266
+const char index_html[] PROGMEM = R”rawliteral(
+<!DOCTYPE html>
+<html lang=“en”>
+<head>
+    <meta charset=“UTF-8">
+    <meta name=“viewport” content=“width=device-width, initial-scale=1.0">
+    <title>Arduino Project</title>
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            text-align: center;
+            background-color: burlywood;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 10%;
+        }
+        .matrix-buttons {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 10px;
+        }
+        .matrix-buttons button {
+            width: 100%;
+            padding: 25px;
+        }
+        .RED {
+            background-color: red;
+        }
+        .controls {
+            margin-top: 20px;
+        }
+        .controls button {
+            margin: 5px;
+            padding: 10px 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class=“header”>
+        <h1>Arduino Project</h1>
+    </div>
+    <div class=“matrix-buttons” id=“matrix-buttons”></div>
+    <div class=“controls”>
+        <button id=“reset-button”>Reset Colors</button>
+    </div>
+    <script src=“index.js”></script>
+</body>
+</html>
+)rawliteral”;
+// JavaScript code to handle the pixel grid and requests
+const char index_js[] PROGMEM = R”rawliteral(
+  function createButtonGrid() {
+    const container = document.getElementById(‘matrix-buttons’);
+    for (let index = 0; index < 64; index++) {
+        const button = document.createElement(‘button’);
+        button.id = `${index}`;
+        button.addEventListener(‘click’, () => {
+            if (button.classList.contains(‘RED’)) {
+                button.classList.remove(‘RED’);
+                sendColorUpdate(button.id, ‘OFF’);
+            } else {
+                button.classList.add(‘RED’);
+                sendColorUpdate(button.id, ‘RED’);
+            }
+        });
+        container.appendChild(button);
+    }
+}
+function sendColorUpdate(buttonId, color) {
+    const data = new URLSearchParams();
+    data.append(‘color’, color);
+    data.append(‘id’, buttonId);
+    console.log(data);
+    fetch(‘/color’, {
+        method: ‘POST’,
+        body: data
+    })
+    .then(response => response.text())
+    .then(result => console.log(result))
+    .catch(error => console.error(‘Error:‘, error));
+}
+function resetColors() {
+    const buttons = document.querySelectorAll(‘.matrix-buttons button’);
+    buttons.forEach(button => {
+        button.classList.remove(‘RED’);
+        sendColorUpdate(button.id, ‘OFF’);
+    });
+}
+document.getElementById(‘reset-button’).addEventListener(‘click’, resetColors);
+createButtonGrid();
+)rawliteral”;
 void setup() {
   Serial.begin(115200);
+  // Start Wi-Fi
   WiFi.begin(SSID, PASSWORD);
-
-  // Wait for connection
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
+    Serial.print(“.”);
   }
-  Serial.println("WiFi connected");
-
-  // initialize the I/O pins as outputs iterate over the pins:
-  for (int thisPin = 0; thisPin < 8; thisPin++) {
-    // initialize the output pins:
-    pinMode(col[thisPin], OUTPUT);
-    pinMode(row[thisPin], OUTPUT);
-    // take the col pins (i.e. the cathodes) high to ensure that the LEDs are off:
-    digitalWrite(col[thisPin], HIGH);
-  }
-
-  // initialize the pixel matrix:
-  for (int x = 0; x < 8; x++) {
-    for (int y = 0; y < 8; y++) {
-      pixels[x][y] = HIGH;
-    }
-  }
+  Serial.println(“WiFi connected”);
+  // Start the web server
+  server.on(“/”, handleRoot);  // Serve the HTML page
+  server.on(“/color”, handleColor);  // Handle pixel color updates
+  server.on(“/index.js”, handleJS);
+  server.begin();
+  Serial.println(“HTTP server started”);
+  Serial.println(WiFi.localIP());
+  // Initialize the NeoMatrix
+  matrix.begin();
+  matrix.setBrightness(50);  // Adjust brightness
+  matrix.fillScreen(0);      // Clear the matrix
+  matrix.show();
 }
-
 void loop() {
-  // read input:
-  readSensors();
-
-  // draw the screen:
-  refreshScreen();
+  server.handleClient();  // Handle incoming requests
 }
-
-void readSensors() {
-  // turn off the last position:
-  pixels[x][y] = HIGH;
-  // read the sensors for X and Y values:
-  x = 7 - map(analogRead(D7), 0, 1023, 0, 7);
-  y = map(analogRead(D4), 0, 1023, 0, 7);
-  // set the new pixel position low so that the LED will turn on in the next
-  // screen refresh:
-  pixels[x][y] = LOW;
+// Serve the HTML page
+void handleRoot() {
+  server.send_P(200, “text/html”, index_html);
 }
-
-void refreshScreen() {
-  // iterate over the rows (anodes):
-  for (int thisRow = 0; thisRow < 8; thisRow++) {
-    // take the row pin (anode) high:
-    digitalWrite(row[thisRow], HIGH);
-    // iterate over the cols (cathodes):
-    for (int thisCol = 0; thisCol < 8; thisCol++) {
-      // get the state of the current pixel;
-      int thisPixel = pixels[thisRow][thisCol];
-      // when the row is HIGH and the col is LOW,
-      // the LED where they meet turns on:
-      digitalWrite(col[thisCol], thisPixel);
-      // turn the pixel off:
-      if (thisPixel == LOW) {
-        digitalWrite(col[thisCol], HIGH);
-      }
+// Serve the JavaScript file
+void handleJS() {
+  server.send_P(200, “application/javascript”, index_js);
+}
+// Handle color updates from the web page
+void handleColor() {
+  if (server.hasArg(“id”) && server.hasArg(“color”)) {
+    int id = server.arg(“id”).toInt();
+    int row = id / 8;  // Calculate row from button id
+    int col = id % 8;  // Calculate column from button id
+    String color = server.arg(“color”);
+    if (color == “RED”) {
+      matrix.drawPixel(col, row, matrix.Color(255, 0, 0));  // Turn on the pixel (red color)
+    } else {
+      matrix.drawPixel(col, row, matrix.Color(0, 0, 0));    // Turn off the pixel
     }
-    // take the row pin low to turn off the whole row:
-    digitalWrite(row[thisRow], LOW);
+    matrix.show();
+    server.send(200, “text/plain”, “OK”);
+  } else {
+    server.send(400, “text/plain”, “Bad Request”);
   }
 }
